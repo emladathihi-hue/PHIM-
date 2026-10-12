@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THỐNG KÊ PHIM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Poppins:wght@300;400;500;600&display=swap');
+
+        :root {
+            --bg-color: #0f0a13;
+            --surface: #1a1025;
+            --surface-hover: #261635;
+            --primary: #ff4d6d;
+            --primary-hover: #ff758f;
+            --secondary: #c9184a;
+            --accent: #ffb3c6;
+            --text-main: #fff0f3;
+            --text-muted: #ffccd5;
+            --border: #4a233b;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            background-image: radial-gradient(circle at 15% 50%, rgba(255, 77, 109, 0.05), transparent 25%),
+                              radial-gradient(circle at 85% 30%, rgba(201, 24, 74, 0.05), transparent 25%);
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, .tab-btn {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Tabs */
+        .tab-btn {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .tab-btn.active {
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(255, 77, 109, 0.3);
+        }
+        .tab-btn::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transition: width 0.3s ease;
+        }
+        .tab-btn.active::after {
+            width: 100%;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        th {
+            background: rgba(38, 22, 53, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px;
+            text-align: left;
+            font-weight: 500;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            position: relative;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            background: var(--surface);
+            transition: background 0.2s;
+            vertical-align: top;
+        }
+
+        tr:hover td {
+            background: var(--surface-hover);
+        }
+
+        /* Resizer */
+        .resizer {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 5px;
+            cursor: col-resize;
+            user-select: none;
+            height: 100%;
+            z-index: 10;
+        }
+        .resizer:hover, .resizing {
+            background-color: var(--primary);
+            opacity: 0.5;
+        }
+
+        /* Draggable Rows */
+        .drag-handle {
+            cursor: grab;
+            color: var(--text-muted);
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+        .drag-handle:hover {
+            opacity: 1;
+            color: var(--primary);
+        }
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: var(--primary-hover);
+        }
+
+        /* Inputs & Buttons */
+        .editable-cell {
+            min-height: 24px;
+            outline: none;
+            cursor: text;
+        }
+        .editable-cell:focus {
+            background: rgba(255, 77, 109, 0.1);
+            border-radius: 4px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(201, 24, 74, 0.3);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 77, 109, 0.4);
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+        }
+
+        /* Image Preview */
+        .img-preview-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .img-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        .img-preview-container:hover .img-preview {
+            transform: scale(1.1);
+        }
+        .img-input {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 4px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+
+        /* Multi Links */
+        .link-tag {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(201, 24, 74, 0.2);
+            border: 1px solid var(--secondary);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin: 2px;
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .link-tag:hover {
+            background: rgba(201, 24, 74, 0.4);
+        }
+        .link-action {
+            margin-left: 4px;
+            cursor: pointer;
+            opacity: 0.7;
+        }
+        .link-action:hover {
+            opacity: 1;
+            color: white;
+        }
+
+        /* Status Indicator */
+        .save-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(26, 16, 37, 0.9);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: opacity 0.3s;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .status-saved .status-dot { background: #4cd137; box-shadow: 0 0 8px #4cd137; }
+        .status-saving .status-dot { background: #fbc531; box-shadow: 0 0 8px #fbc531; }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 24px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+        .modal-input {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 8px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        
+        [contenteditable]:empty:before {
+            content: attr(data-placeholder);
+            color: rgba(255, 204, 213, 0.3);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="text-center mb-10">
+        <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent mb-2" style="background-image: linear-gradient(to right, #ff4d6d, #ffb3c6);">
+            <i class="fa-solid fa-heart text-secondary mr-2 text-3xl"></i>
+            Thống Kê Phim
+        </h1>
+        <p class="text-text-muted italic opacity-80">Lưu giữ những khoảnh khắc ngọt ngào...</p>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="flex justify-center gap-6 mb-8 border-b border-border pb-2">
+        <button class="tab-btn active text-xl px-4 py-2" onclick="switchTab('theloai')">Bảng Thể Loại</button>
+        <button class="tab-btn text-xl px-4 py-2" onclick="switchTab('dienvien')">Diễn Viên</button>
+        <button class="tab-btn text-xl px-4 py-2" onclick="switchTab('kenh')">Kênh Phim</button>
+    </nav>
+
+    <!-- Tab Contents -->
+    <main>
+        <!-- Tab 1: Thể Loại -->
+        <div id="tab-theloai" class="tab-content active">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl text-accent"><i class="fa-solid fa-layer-group mr-2"></i>Phân Loại Cảm Xúc</h2>
+                <button class="btn" onclick="addRow('table-theloai')"><i class="fa-solid fa-plus mr-1"></i>Thêm Thể Loại</button>
+            </div>
+            <div class="table-container">
+                <table id="table-theloai-el">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;"></th>
+                            <th style="width: 60px;">STT</th>
+                            <th colspan="3" class="text-center border-b-0">Thể Loại</th>
+                            <th style="width: 250px;" rowspan="2">Mô tả</th>
+                            <th style="width: 200px;" rowspan="2">Ghi chú</th>
+                            <th style="width: 120px;" rowspan="2">Ảnh</th>
+                            <th style="width: 100px;" rowspan="2">Thao tác</th>
+                        </tr>
+                        <tr>
+                            <th style="width: 50px; border-top: none;"></th>
+                            <th style="width: 60px; border-top: none;"></th>
+                            <th style="width: 120px;">Tiếng Việt</th>
+                            <th style="width: 120px;">Tiếng Anh</th>
+                            <th style="width: 120px;">Khác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-theloai"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 2: Diễn Viên -->
+        <div id="tab-dienvien" class="tab-content hidden">
+            <!-- Sub Tabs -->
+            <div class="flex justify-center gap-4 mb-6">
+                <button class="tab-btn sub-tab-btn active px-3 py-1" onclick="switchSubTab('straight')">Nam - Nữ Thẳng</button>
+                <button class="tab-btn sub-tab-btn px-3 py-1" onclick="switchSubTab('lgbt')">Đồng Tính</button>
+            </div>
+
+            <!-- Straight Table -->
+            <div id="subtab-straight" class="sub-tab-content active">
+                 <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl text-accent"><i class="fa-solid fa-venus-mars mr-2"></i>Diễn Viên Nam - Nữ</h2>
+                    <button class="btn" onclick="addRow('table-straight')"><i class="fa-solid fa-plus mr-1"></i>Thêm Mới</button>
+                </div>
+                <div class="table-container">
+                    <table id="table-straight-el">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;"></th>
+                                <th style="width: 60px;">STT</th>
+                                <th style="width: 120px;">Ảnh</th>
+                                <th style="width: 150px;">Tên</th>
+                                <th style="width: 250px;">Mô tả</th>
+                                <th style="width: 200px;">Links</th>
+                                <th style="width: 150px;">Ghi chú</th>
+                                <th style="width: 100px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-straight"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- LGBT Table -->
+            <div id="subtab-lgbt" class="sub-tab-content hidden">
+                 <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl text-accent"><i class="fa-solid fa-rainbow mr-2"></i>Diễn Viên Đồng Tính</h2>
+                    <button class="btn" onclick="addRow('table-lgbt')"><i class="fa-solid fa-plus mr-1"></i>Thêm Mới</button>
+                </div>
+                <div class="table-container">
+                    <table id="table-lgbt-el">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;"></th>
+                                <th style="width: 60px;">STT</th>
+                                <th style="width: 120px;">Ảnh</th>
+                                <th style="width: 150px;">Tên</th>
+                                <th style="width: 250px;">Mô tả</th>
+                                <th style="width: 200px;">Links</th>
+                                <th style="width: 150px;">Ghi chú</th>
+                                <th style="width: 100px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-lgbt"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Kênh -->
+        <div id="tab-kenh" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl text-accent"><i class="fa-solid fa-tv mr-2"></i>Kênh Yêu Thích</h2>
+                <button class="btn" onclick="addRow('table-kenh')"><i class="fa-solid fa-plus mr-1"></i>Thêm Kênh</button>
+            </div>
+            <div class="table-container">
+                <table id="table-kenh-el">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;"></th>
+                            <th style="width: 60px;">STT</th>
+                            <th style="width: 200px;">Tên Kênh</th>
+                            <th style="width: 300px;">Links Kênh</th>
+                            <th style="width: 250px;">Ghi chú</th>
+                            <th style="width: 100px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-kenh"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Save Status -->
+    <div id="saveStatus" class="save-status status-saved">
+        <div class="status-dot"></div>
+        <span class="text-sm font-medium" id="saveText">Đã lưu</span>
+    </div>
+
+    <!-- Link Modal -->
+    <div id="linkModal" class="modal flex">
+        <div class="modal-content">
+            <h3 class="text-xl mb-4 text-accent" id="modalTitle">Thêm/Sửa Link</h3>
+            <input type="text" id="linkName" class="modal-input" placeholder="Tên hiển thị (VD: OnlyFans, Twitter)">
+            <input type="url" id="linkUrl" class="modal-input" placeholder="URL (https://...)">
+            <div class="flex justify-end gap-2 mt-4">
+                <button class="btn" style="background: transparent; border: 1px solid var(--border);" onclick="closeModal()">Hủy</button>
+                <button class="btn" onclick="saveLink()">Lưu Link</button>
+            </div>
+            <input type="hidden" id="currentCellId">
+            <input type="hidden" id="currentLinkIndex">
+        </div>
+    </div>
+
+    <script>
+        // State
+        let appData = {
+            theloai: [],
+            straight: [],
+            lgbt: [],
+            kenh: [],
+            colWidths: {}
+        };
+        
+        let currentEditingCell = null;
+        let currentLinkIdx = -1;
+        let saveTimeout = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            initResizers();
+            initSortable();
+            renderAllTables();
+        });
+
+        // Tab Switching
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('nav .tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            event.currentTarget.classList.add('active');
+        }
+
+        function switchSubTab(tabId) {
+            document.querySelectorAll('.sub-tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.sub-tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(`subtab-${tabId}`).classList.remove('hidden');
+            event.currentTarget.classList.add('active');
+        }
+
+        // Data Management
+        function loadData() {
+            const saved = localStorage.getItem('thongKePhimData');
+            if (saved) {
+                try {
+                    appData = JSON.parse(saved);
+                    // Ensure arrays exist
+                    ['theloai', 'straight', 'lgbt', 'kenh'].forEach(k => {
+                        if(!appData[k]) appData[k] = [];
+                    });
+                    if(!appData.colWidths) appData.colWidths = {};
+                } catch(e) { console.error("Data parse error", e); }
+            }
+        }
+
+        function triggerSave() {
+            const status = document.getElementById('saveStatus');
+            const text = document.getElementById('saveText');
+            
+            status.className = 'save-status status-saving';
+            text.textContent = 'Đang lưu...';
+
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                localStorage.setItem('thongKePhimData', JSON.stringify(appData));
+                status.className = 'save-status status-saved';
+                text.textContent = 'Đã lưu';
+            }, 500);
+        }
+
+        function extractTableData(type) {
+            const tbody = document.getElementById(`tbody-${type}`);
+            const rows = tbody.querySelectorAll('tr');
+            const newData = [];
+            
+            rows.forEach(row => {
+                const id = row.dataset.id;
+                const rowData = { id: id };
+                
+                if (type === 'theloai') {
+                    rowData.vi = row.querySelector('.col-vi').innerText;
+                    rowData.en = row.querySelector('.col-en').innerText;
+                    rowData.other = row.querySelector('.col-other').innerText;
+                    rowData.desc = row.querySelector('.col-desc').innerText;
+                    rowData.note = row.querySelector('.col-note').innerText;
+                    rowData.img = row.querySelector('.col-img-input').value;
+                } else if (type === 'straight' || type === 'lgbt') {
+                    rowData.img = row.querySelector('.col-img-input').value;
+                    rowData.name = row.querySelector('.col-name').innerText;
+                    rowData.desc = row.querySelector('.col-desc').innerText;
+                    // Links are stored in data attr
+                    rowData.links = JSON.parse(row.querySelector('.col-links').dataset.links || '[]');
+                    rowData.note = row.querySelector('.col-note').innerText;
+                } else if (type === 'kenh') {
+                    rowData.name = row.querySelector('.col-name').innerText;
+                    rowData.links = JSON.parse(row.querySelector('.col-links').dataset.links || '[]');
+                    rowData.note = row.querySelector('.col-note').innerText;
+                }
+                newData.push(rowData);
+            });
+            
+            appData[type] = newData;
+            triggerSave();
+            updateSTT(type);
+        }
+
+        // Table Rendering & Interactions
+        function renderAllTables() {
+            renderTable('theloai', appData.theloai);
+            renderTable('straight', appData.straight);
+            renderTable('lgbt', appData.lgbt);
+            renderTable('kenh', appData.kenh);
+            applyColumnWidths();
+        }
+
+        function createImgCell(imgUrl) {
+            return `
+                <div class="flex flex-col items-center gap-2">
+                    <div class="img-preview-container">
+                        <img src="${imgUrl || 'https://placehold.co/80x80/261635/ffb3c6?text=Ảnh'}" class="img-preview" onerror="this.src='https://placehold.co/80x80/261635/ffb3c6?text=Lỗi'">
+                    </div>
+                    <input type="text" class="img-input col-img-input" placeholder="Link ảnh..." value="${imgUrl || ''}" onchange="updateImg(this, '${imgUrl}')">
+                </div>
+            `;
+        }
+
+        function createLinksCell(links, cellId) {
+            let html = `<div class="col-links min-h-[30px]" data-links='${JSON.stringify(links || [])}' id="${cellId}">`;
+            (links || []).forEach((link, idx) => {
+                html += `
+                    <div class="inline-block mb-1">
+                        <a href="${link.url}" target="_blank" class="link-tag">${link.name}</a>
+                        <i class="fa-solid fa-pen link-action text-xs" onclick="openLinkModal('${cellId}', ${idx})"></i>
+                        <i class="fa-solid fa-xmark link-action text-xs text-red-400" onclick="removeLink('${cellId}', ${idx})"></i>
+                    </div>
+                `;
+            });
+            html += `<button class="text-xs text-primary mt-1 hover:text-accent" onclick="openLinkModal('${cellId}', -1)"><i class="fa-solid fa-plus"></i> Thêm link</button></div>`;
+            return html;
+        }
+
+        function renderRow(type, item, index) {
+            const id = item.id || Date.now() + Math.random().toString(36).substr(2, 9);
+            let tr = document.createElement('tr');
+            tr.dataset.id = id;
+            
+            let html = `
+                <td class="text-center"><i class="fa-solid fa-grip-vertical drag-handle"></i></td>
+                <td class="text-center stt-cell">${index + 1}</td>
+            `;
+
+            if (type === 'theloai') {
+                html += `
+                    <td><div class="editable-cell col-vi" contenteditable="true" data-placeholder="..." onblur="extractTableData('${type}')">${item.vi || ''}</div></td>
+                    <td><div class="editable-cell col-en" contenteditable="true" data-placeholder="..." onblur="extractTableData('${type}')">${item.en || ''}</div></td>
+                    <td><div class="editable-cell col-other" contenteditable="true" data-placeholder="..." onblur="extractTableData('${type}')">${item.other || ''}</div></td>
+                    <td><div class="editable-cell col-desc" contenteditable="true" data-placeholder="..." onblur="extractTableData('${type}')">${item.desc || ''}</div></td>
+                    <td><div class="editable-cell col-note" contenteditable="true" data-placeholder="..." onblur="extractTableData('${type}')">${item.note || ''}</div></td>
+                    <td>${createImgCell(item.img)}</td>
+                `;
+            } else if (type === 'straight' || type === 'lgbt') {
+                 html += `
+                    <td>${createImgCell(item.img)}</td>
+                    <td><div class="editable-cell col-name font-semibold text-accent" contenteditable="true" data-placeholder="Tên..." onblur="extractTableData('${type}')">${item.name || ''}</div></td>
+                    <td><div class="editable-cell col-desc" contenteditable="true" data-placeholder="Mô tả..." onblur="extractTableData('${type}')">${item.desc || ''}</div></td>
+                    <td>${createLinksCell(item.links, `links-${id}`)}</td>
+                    <td><div class="editable-cell col-note text-sm opacity-80" contenteditable="true" data-placeholder="Ghi chú..." onblur="extractTableData('${type}')">${item.note || ''}</div></td>
+                `;
+            } else if (type === 'kenh') {
+                 html += `
+                    <td><div class="editable-cell col-name font-semibold text-accent" contenteditable="true" data-placeholder="Tên kênh..." onblur="extractTableData('${type}')">${item.name || ''}</div></td>
+                    <td>${createLinksCell(item.links, `links-${id}`)}</td>
+                    <td><div class="editable-cell col-note text-sm opacity-80" contenteditable="true" data-placeholder="Ghi chú..." onblur="extractTableData('${type}')">${item.note || ''}</div></td>
+                `;
+            }
+
+            html += `
+                <td class="text-center">
+                    <button class="text-red-400 hover:text-red-300 p-2" onclick="deleteRow(this, '${type}')"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            `;
+            
+            tr.innerHTML = html;
+            return tr;
+        }
+
+        function renderTable(type, data) {
+            const tbody = document.getElementById(`tbody-${type}`);
+            tbody.innerHTML = '';
+            data.forEach((item, idx) => {
+                tbody.appendChild(renderRow(type, item, idx));
+            });
+        }
+
+        function addRow(tableId) {
+            const type = tableId.split('-')[1];
+            const tbody = document.getElementById(`tbody-${type}`);
+            const newRow = renderRow(type, {}, tbody.children.length);
+            tbody.appendChild(newRow);
+            extractTableData(type);
+        }
+
+        function deleteRow(btn, type) {
+            const tr = btn.closest('tr');
+            tr.remove();
+            extractTableData(type);
+        }
+
+        function updateSTT(type) {
+            const rows = document.getElementById(`tbody-${type}`).querySelectorAll('tr');
+            rows.forEach((row, idx) => {
+                row.querySelector('.stt-cell').textContent = idx + 1;
+            });
+        }
+
+        function updateImg(input, oldUrl) {
+            const img = input.previousElementSibling.querySelector('img');
+            img.src = input.value || 'https://placehold.co/80x80/261635/ffb3c6?text=Ảnh';
+            const type = input.closest('tbody').id.replace('tbody-', '');
+            extractTableData(type);
+        }
+
+        // Link Modal Logic
+        function openLinkModal(cellId, linkIndex) {
+            const modal = document.getElementById('linkModal');
+            document.getElementById('currentCellId').value = cellId;
+            document.getElementById('currentLinkIndex').value = linkIndex;
+            
+            const cell = document.getElementById(cellId);
+            const links = JSON.parse(cell.dataset.links || '[]');
+            
+            if (linkIndex >= 0 && links[linkIndex]) {
+                document.getElementById('modalTitle').textContent = 'Sửa Link';
+                document.getElementById('linkName').value = links[linkIndex].name;
+                document.getElementById('linkUrl').value = links[linkIndex].url;
+            } else {
+                document.getElementById('modalTitle').textContent = 'Thêm Link Mới';
+                document.getElementById('linkName').value = '';
+                document.getElementById('linkUrl').value = '';
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('linkModal').style.display = 'none';
+        }
+
+        function saveLink() {
+            const cellId = document.getElementById('currentCellId').value;
+            const linkIndex = parseInt(document.getElementById('currentLinkIndex').value);
+            const name = document.getElementById('linkName').value.trim();
+            const url = document.getElementById('linkUrl').value.trim();
+            
+            if (!name || !url) {
+                alert("Vui lòng nhập đủ tên và URL");
+                return;
+            }
+
+            const cell = document.getElementById(cellId);
+            let links = JSON.parse(cell.dataset.links || '[]');
+            
+            if (linkIndex >= 0) {
+                links[linkIndex] = { name, url };
+            } else {
+                links.push({ name, url });
+            }
+            
+            cell.dataset.links = JSON.stringify(links);
+            
+            // Re-render cell content
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = createLinksCell(links, cellId);
+            cell.parentNode.replaceChild(tempDiv.firstElementChild, cell);
+
+            closeModal();
+            const type = cell.closest('tbody').id.replace('tbody-', '');
+            extractTableData(type);
+        }
+
+        function removeLink(cellId, linkIndex) {
+            if(confirm("Xóa link này?")) {
+                const cell = document.getElementById(cellId);
+                let links = JSON.parse(cell.dataset.links || '[]');
+                links.splice(linkIndex, 1);
+                cell.dataset.links = JSON.stringify(links);
+                
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = createLinksCell(links, cellId);
+                cell.parentNode.replaceChild(tempDiv.firstElementChild, cell);
+                
+                const type = cell.closest('tbody').id.replace('tbody-', '');
+                extractTableData(type);
+            }
+        }
+
+        // SortableJS Setup
+        function initSortable() {
+            ['theloai', 'straight', 'lgbt', 'kenh'].forEach(type => {
+                const tbody = document.getElementById(`tbody-${type}`);
+                new Sortable(tbody, {
+                    handle: '.drag-handle',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: () => {
+                        extractTableData(type);
+                    }
+                });
+            });
+        }
+
+        // Column Resizing Logic
+        function initResizers() {
+            const tables = document.querySelectorAll('table');
+            tables.forEach(table => {
+                const cols = table.querySelectorAll('th');
+                cols.forEach((col, idx) => {
+                    if (idx < cols.length - 1) { // Skip last col
+                        const resizer = document.createElement('div');
+                        resizer.classList.add('resizer');
+                        col.appendChild(resizer);
+                        createResizableColumn(col, resizer, table.id, idx);
+                    }
+                });
+            });
+        }
+
+        function createResizableColumn(col, resizer, tableId, colIdx) {
+            let x = 0;
+            let w = 0;
+
+            const mouseDownHandler = function(e) {
+                x = e.clientX;
+                const styles = window.getComputedStyle(col);
+                w = parseInt(styles.width, 10);
+
+                document.addEventListener('mousemove', mouseMoveHandler);
+                document.addEventListener('mouseup', mouseUpHandler);
+                resizer.classList.add('resizing');
+            };
+
+            const mouseMoveHandler = function(e) {
+                const dx = e.clientX - x;
+                const newWidth = Math.max(50, w + dx);
+                col.style.width = `${newWidth}px`;
+            };
+
+            const mouseUpHandler = function() {
+                resizer.classList.remove('resizing');
+                document.removeEventListener('mousemove', mouseMoveHandler);
+                document.removeEventListener('mouseup', mouseUpHandler);
+                
+                // Save width
+                const key = `${tableId}-col-${colIdx}`;
+                appData.colWidths[key] = col.style.width;
+                triggerSave();
+            };
+
+            resizer.addEventListener('mousedown', mouseDownHandler);
+        }
+
+        function applyColumnWidths() {
+            for (const key in appData.colWidths) {
+                const parts = key.split('-col-');
+                if (parts.length === 2) {
+                    const tableId = parts[0];
+                    const colIdx = parseInt(parts[1]);
+                    const table = document.getElementById(tableId);
+                    if (table) {
+                        const col = table.querySelectorAll('th')[colIdx];
+                        if (col) {
+                            col.style.width = appData.colWidths[key];
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Hide modal when clicking outside
+        document.getElementById('linkModal').addEventListener('click', (e) => {
+            if (e.target.id === 'linkModal') closeModal();
+        });
+
+        // Initialize modal as hidden to prevent flicker
+        document.getElementById('linkModal').style.display = 'none';
+    </script>
+</body>
+</html>
